@@ -1,0 +1,10 @@
+[build]
+  command = "cd ExpensesAI && npm install && npm run build"
+  publish = "ExpensesAI/dist"
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+
