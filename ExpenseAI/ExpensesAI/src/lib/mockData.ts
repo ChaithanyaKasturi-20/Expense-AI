@@ -1,13 +1,44 @@
 export type Category = 
-  | 'food' 
-  | 'transport' 
-  | 'shopping' 
-  | 'entertainment' 
-  | 'bills' 
-  | 'subscriptions' 
+  | 'food'
+  | 'transport'
+  | 'shopping'
+  | 'entertainment'
+  | 'bills'
+  | 'electricity'
+  | 'water'
+  | 'gas'
+  | 'internet'
+  | 'mobile recharge'
+  | 'fuel'
   | 'groceries'
-  | 'health'
-  | 'other';
+  | 'rent'
+  | 'emi'
+  | 'restaurants'
+  | 'food delivery'
+  | 'hospital'
+  | 'medical'
+  | 'pharmacy'
+  | 'education'
+  | 'gaming'
+  | 'movies'
+  | 'friends'
+  | 'family'
+  | 'travel'
+  | 'hotels'
+  | 'atm withdrawals'
+  | 'card payments'
+  | 'upi payments'
+  | 'bank transfer'
+  | 'salary'
+  | 'investments'
+  | 'insurance'
+  | 'donations'
+  | 'pets'
+  | 'fitness'
+  | 'sports'
+  | 'subscriptions'
+  | 'miscellaneous'
+  | 'unknown';
 
 export type HabitSeverity = 'good' | 'warning' | 'bad';
 
@@ -19,6 +50,12 @@ export interface Expense {
   date: Date;
   isImpulse?: boolean;
   source: 'MANUAL' | 'AUTO';
+  notes?: string;
+  merchant?: string;
+  paymentMethod?: string;
+  tags?: string[];
+  receiptUrl?: string;
+  isRecurring?: boolean;
 }
 
 export interface HabitAlert {
@@ -45,10 +82,41 @@ export const categoryColors: Record<Category, string> = {
   shopping: 'hsl(330, 70%, 50%)',
   entertainment: 'hsl(280, 70%, 50%)',
   bills: 'hsl(160, 70%, 40%)',
-  subscriptions: 'hsl(0, 70%, 50%)',
+  electricity: 'hsl(200, 60%, 55%)',
+  water: 'hsl(190, 60%, 55%)',
+  gas: 'hsl(30, 80%, 55%)',
+  internet: 'hsl(240, 70%, 55%)',
+  'mobile recharge': 'hsl(15, 80%, 60%)',
+  fuel: 'hsl(25, 80%, 50%)',
   groceries: 'hsl(120, 50%, 45%)',
-  health: 'hsl(180, 60%, 45%)',
-  other: 'hsl(220, 15%, 50%)',
+  rent: 'hsl(10, 70%, 45%)',
+  emi: 'hsl(210, 60%, 40%)',
+  restaurants: 'hsl(18, 85%, 55%)',
+  'food delivery': 'hsl(20, 90%, 55%)',
+  hospital: 'hsl(170, 60%, 45%)',
+  medical: 'hsl(165, 75%, 55%)',
+  pharmacy: 'hsl(175, 70%, 50%)',
+  education: 'hsl(258, 70%, 55%)',
+  gaming: 'hsl(280, 70%, 50%)',
+  movies: 'hsl(290, 65%, 55%)',
+  friends: 'hsl(300, 70%, 50%)',
+  family: 'hsl(330, 65%, 55%)',
+  travel: 'hsl(45, 85%, 55%)',
+  hotels: 'hsl(340, 70%, 50%)',
+  'atm withdrawals': 'hsl(0, 40%, 45%)',
+  'card payments': 'hsl(220, 55%, 55%)',
+  'upi payments': 'hsl(175, 70%, 50%)',
+  'bank transfer': 'hsl(190, 55%, 55%)',
+  salary: 'hsl(140, 65%, 45%)',
+  investments: 'hsl(125, 50%, 35%)',
+  insurance: 'hsl(215, 55%, 55%)',
+  donations: 'hsl(330, 45%, 55%)',
+  pets: 'hsl(35, 80%, 55%)',
+  fitness: 'hsl(160, 65%, 50%)',
+  sports: 'hsl(200, 70%, 50%)',
+  subscriptions: 'hsl(0, 70%, 50%)',
+  miscellaneous: 'hsl(220, 15%, 50%)',
+  unknown: 'hsl(240, 10%, 40%)',
 };
 
 export const categoryIcons: Record<Category, string> = {
@@ -57,11 +125,85 @@ export const categoryIcons: Record<Category, string> = {
   shopping: '🛍️',
   entertainment: '🎮',
   bills: '📄',
-  subscriptions: '📺',
+  electricity: '💡',
+  water: '💧',
+  gas: '⛽',
+  internet: '🌐',
+  'mobile recharge': '📱',
+  fuel: '⛽',
   groceries: '🛒',
-  health: '💊',
-  other: '📦',
+  rent: '🏠',
+  emi: '🏦',
+  restaurants: '🍽️',
+  'food delivery': '🛵',
+  hospital: '🏥',
+  medical: '🩺',
+  pharmacy: '💊',
+  education: '🎓',
+  gaming: '🎮',
+  movies: '🎬',
+  friends: '🤝',
+  family: '👨‍👩‍👧‍👦',
+  travel: '✈️',
+  hotels: '🏨',
+  'atm withdrawals': '🏧',
+  'card payments': '💳',
+  'upi payments': '📲',
+  'bank transfer': '🏦',
+  salary: '💼',
+  investments: '📈',
+  insurance: '🛡️',
+  donations: '🎁',
+  pets: '🐾',
+  fitness: '🏋️',
+  sports: '🏀',
+  subscriptions: '📺',
+  miscellaneous: '📦',
+  unknown: '❓',
 };
+
+export const categories: Category[] = [
+  'food',
+  'transport',
+  'shopping',
+  'entertainment',
+  'bills',
+  'electricity',
+  'water',
+  'gas',
+  'internet',
+  'mobile recharge',
+  'fuel',
+  'groceries',
+  'rent',
+  'emi',
+  'restaurants',
+  'food delivery',
+  'hospital',
+  'medical',
+  'pharmacy',
+  'education',
+  'gaming',
+  'movies',
+  'friends',
+  'family',
+  'travel',
+  'hotels',
+  'atm withdrawals',
+  'card payments',
+  'upi payments',
+  'bank transfer',
+  'salary',
+  'investments',
+  'insurance',
+  'donations',
+  'pets',
+  'fitness',
+  'sports',
+  'subscriptions',
+  'miscellaneous',
+  'unknown',
+];
 
 export const mockExpenses: Expense[] = [
   { id: '1', description: 'Uber Eats - McDonalds', amount: 18.50, category: 'food', date: new Date(2025, 0, 9, 12, 30), isImpulse: true, source: 'MANUAL' },

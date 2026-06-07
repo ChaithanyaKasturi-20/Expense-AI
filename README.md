@@ -8,9 +8,9 @@ A modern, AI-powered expense tracking and financial management application built
 - **AI-Powered Insights**: Get intelligent spending recommendations and analytics
 - **Savings Goals**: Set and monitor your savings targets
 - **Weekly Trends**: Visualize your spending patterns with interactive charts
-- **User Authentication**: Secure login and signup with Firebase
+- **User Authentication**: Secure login and signup with Supabase
 - **Responsive Design**: Beautiful UI that works on all devices
-- **Real-time Updates**: Live data synchronization with Firebase backend
+- **Real-time Updates**: Live data synchronization with Supabase backend
 
 ## 🛠 Tech Stack
 
@@ -25,7 +25,7 @@ A modern, AI-powered expense tracking and financial management application built
 - **Framer Motion** - Smooth animations
 
 ### Backend & Services
-- **Firebase** - Authentication, Database, and Hosting
+- **Supabase** - Authentication and database services
 - **Recharts** - Data visualization
 
 ## 📋 Project Structure
@@ -50,8 +50,6 @@ ExpenseAI/
 │   │   ├── vite.config.ts
 │   │   ├── tailwind.config.ts
 │   │   └── tsconfig.json
-│   └── netlify.toml         # Netlify deployment config
-├── netlify-deployment-guide/ # Deployment documentation
 └── README.md
 ```
 
@@ -60,7 +58,7 @@ ExpenseAI/
 ### Prerequisites
 - Node.js 16+ or Bun
 - npm or Bun package manager
-- Firebase account
+- Supabase account
 
 ### Installation
 
@@ -82,12 +80,17 @@ ExpenseAI/
    bun install
    ```
 
-4. **Set up Firebase**
-   - Create a Firebase project at [firebase.google.com](https://firebase.google.com)
-   - Update your Firebase configuration in `src/lib/firebase.ts`
-   - See `FIREBASE_SETUP.md` for detailed instructions
+4. **Set up Supabase**
+   - Create a Supabase project at [supabase.com](https://supabase.com)
+   - Copy `.env.local.example` to `.env.local`
+   - Add `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY`
 
-5. **Start the development server**
+5. **Set up the AI backend**
+   - In `ExpenseAI/ExpensesAI/server`, copy `.env.example` to `.env.local`
+   - Add `OPENAI_API_KEY` or `GEMINI_API_KEY`
+   - Optionally set `SERVER_PORT` if you want a port other than `4000`
+
+6. **Start the development server**
    ```bash
    npm run dev
    # or
@@ -113,27 +116,38 @@ npm run lint         # Run ESLint
 npm run preview      # Preview production build
 ```
 
-## 🔐 Firebase Setup
+## 🔐 Supabase Setup
 
-Detailed Firebase configuration instructions are available in [ExpenseAI/ExpensesAI/FIREBASE_SETUP.md](./ExpenseAI/ExpensesAI/FIREBASE_SETUP.md).
+This app uses Supabase for authentication. Copy `.env.local.example` to `.env.local` and set your Supabase project credentials.
 
 ### Quick Setup
-1. Enable Authentication (Email/Password)
-2. Create Firestore Database
-3. Set up security rules
-4. Add your Firebase config to environment variables
+1. Create a Supabase project
+2. Enable Email/Password auth in Supabase
+3. Configure OAuth providers if needed (e.g. Google)
+4. Add the following env vars to `.env.local`:
+   - `VITE_SUPABASE_URL`
+   - `VITE_SUPABASE_ANON_KEY`
+   - `OPENAI_API_KEY` or `GEMINI_API_KEY` (for backend AI chat/analysis)
+   - `SERVER_PORT` (optional for backend, default `4000`)
+
+If you are running the backend separately, also copy `ExpenseAI/ExpensesAI/server/.env.example` to `ExpenseAI/ExpensesAI/server/.env.local` and set the same AI key there.
 
 ## 🚢 Deployment
 
-### Netlify Deployment
+### Vercel Deployment
 
-The project includes Netlify configuration. See the [Netlify Deployment Guide](./netlify-deployment-guide/README.md) for detailed instructions.
+This repository is configured for Vercel using `vercel.json` and a root `package.json` that builds the nested React app in `ExpenseAI/ExpensesAI`.
 
-Quick deploy:
-```bash
-npm run build
-# Deploy the dist folder to Netlify
-```
+1. Connect the repository to Vercel.
+2. In Vercel Project Settings, add these environment variables:
+   - `VITE_SUPABASE_URL`
+   - `VITE_SUPABASE_ANON_KEY`
+3. Use the build command:
+   ```bash
+   npm run build
+   ```
+
+Vercel will build the nested app and deploy the static output from `ExpenseAI/ExpensesAI/dist`.
 
 ## 📝 Pages & Components
 
@@ -182,7 +196,7 @@ Errors are formatted and displayed user-friendly messages. See `src/lib/errorFor
 - [Vite Documentation](https://vitejs.dev)
 - [Tailwind CSS Documentation](https://tailwindcss.com)
 - [shadcn/ui Documentation](https://ui.shadcn.com)
-- [Firebase Documentation](https://firebase.google.com/docs)
+- [Supabase Documentation](https://supabase.com/docs)
 - [React Router Documentation](https://reactrouter.com)
 
 ## 📄 License

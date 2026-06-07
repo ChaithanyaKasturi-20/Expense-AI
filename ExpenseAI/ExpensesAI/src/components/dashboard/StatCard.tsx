@@ -15,17 +15,17 @@ interface StatCardProps {
 }
 
 const variantStyles = {
-  default: 'bg-white/10 backdrop-blur-md border border-white/20 text-white hover:bg-white/15 hover:border-white/30',
-  primary: 'bg-gradient-to-br from-purple-500/30 to-cyan-500/30 backdrop-blur-md border border-cyan-400/30 text-white',
-  warning: 'bg-gradient-to-br from-orange-500/30 to-red-500/30 backdrop-blur-md border border-orange-400/30 text-white',
-  success: 'bg-gradient-to-br from-green-500/30 to-emerald-500/30 backdrop-blur-md border border-green-400/30 text-white',
+  default: 'border-border bg-card text-card-foreground',
+  primary: 'border-cyan-500/25 bg-cyan-500/10 text-cyan-100',
+  warning: 'border-orange-400/25 bg-orange-500/10 text-orange-100',
+  success: 'border-emerald-400/25 bg-emerald-500/10 text-emerald-100',
 };
 
 const iconStyles = {
-  default: 'bg-cyan-500/30 text-cyan-300 border border-cyan-400/30',
-  primary: 'bg-white/20 text-white border border-white/30',
-  warning: 'bg-orange-500/30 text-orange-200 border border-orange-400/30',
-  success: 'bg-green-500/30 text-green-200 border border-green-400/30',
+  default: 'bg-muted text-primary border border-border',
+  primary: 'bg-cyan-500/15 text-cyan-100 border border-cyan-400/20',
+  warning: 'bg-orange-500/15 text-orange-100 border border-orange-400/20',
+  success: 'bg-emerald-500/15 text-emerald-100 border border-emerald-400/20',
 };
 
 export function StatCard({ title, value, subtitle, icon: Icon, trend, variant = 'default' }: StatCardProps) {
@@ -35,47 +35,27 @@ export function StatCard({ title, value, subtitle, icon: Icon, trend, variant = 
       animate={{ opacity: 1, y: 0 }}
       whileHover={{ y: -4, transition: { duration: 0.2 } }}
       className={cn(
-        'relative overflow-hidden rounded-2xl p-6 shadow-2xl transition-all duration-300',
+        'relative overflow-hidden rounded-[1.75rem] border border-border bg-card p-6 shadow-2xl shadow-black/20 transition-all duration-300 hover:border-border hover:bg-card/10',
         variantStyles[variant]
       )}
     >
-      <div className="flex items-start justify-between">
+      <div className="flex items-start justify-between gap-4">
         <div className="space-y-2">
-          <p className={cn(
-            'text-sm font-medium',
-            variant === 'default' ? 'text-gray-300' : 'text-gray-200'
-          )}>
-            {title}
-          </p>
-          <p className="text-3xl font-bold font-display">{value}</p>
-          {subtitle && (
-            <p className={cn(
-              'text-xs',
-              variant === 'default' ? 'text-gray-400' : 'text-gray-300'
-            )}>
-              {subtitle}
-            </p>
-          )}
+          <p className="text-sm font-semibold uppercase tracking-[0.22em] text-muted-foreground">{title}</p>
+          <p className="text-3xl font-semibold font-display leading-tight">{value}</p>
+          {subtitle && <p className="text-sm text-muted-foreground">{subtitle}</p>}
           {trend && (
-            <div className={cn(
-              'inline-flex items-center gap-1 text-xs font-medium',
-              trend.isPositive ? 'text-green-300' : 'text-red-300'
-            )}>
+            <div className={cn('inline-flex items-center gap-1 text-sm font-medium', trend.isPositive ? 'text-success' : 'text-destructive')}> 
               <span>{trend.isPositive ? '↑' : '↓'}</span>
-              <span>{Math.abs(trend.value)}% from last month</span>
+              <span>{Math.abs(trend.value)}%</span>
             </div>
           )}
         </div>
-        <div className={cn(
-          'rounded-xl p-3 border',
-          iconStyles[variant]
-        )}>
+        <div className={cn('rounded-3xl p-3 shadow-inner shadow-white/5', iconStyles[variant])}>
           <Icon className="h-6 w-6" />
         </div>
       </div>
-      
-      {/* Decorative element */}
-      <div className="absolute -right-8 -top-8 h-24 w-24 rounded-full bg-current opacity-5" />
+      <div className="pointer-events-none absolute -right-8 -top-8 h-24 w-24 rounded-full bg-current opacity-5" />
     </motion.div>
   );
 }

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,7 +7,7 @@ import { useAuth } from "@/context/AuthContext";
 import { Mail, Lock, UserPlus, User, Calendar, Users } from "lucide-react";
 
 const Signup = () => {
-  const { signup, loginWithGoogle } = useAuth();
+  const { signUp, signInWithGoogle, user } = useAuth();
   const [formData, setFormData] = useState({
     fullName: "",
     email: "",
@@ -19,6 +19,12 @@ const Signup = () => {
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
 
+  useEffect(() => {
+    if (user) {
+      navigate("/dashboard", { replace: true });
+    }
+  }, [user, navigate]);
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
@@ -28,9 +34,17 @@ const Signup = () => {
     e.preventDefault();
     setError(null);
     setLoading(true);
+
     try {
-      await signup(formData.email, formData.password);
-      navigate("/dashboard", { replace: true });
+      const signedIn = await signUp(formData.email, formData.password);
+      if (signedIn) {
+        navigate("/dashboard", { replace: true });
+      } else {
+        navigate("/login", {
+          replace: true,
+          state: { message: "Please confirm your email before signing in." },
+        });
+      }
     } catch (err: any) {
       setError(err?.message || "Failed to sign up");
     } finally {
@@ -42,8 +56,8 @@ const Signup = () => {
     setError(null);
     setLoading(true);
     try {
-      await loginWithGoogle();
-      navigate("/dashboard", { replace: true });
+      await signInWithGoogle();
+      // Supabase will redirect to Google and back using the configured redirect URL.
     } catch (err: any) {
       setError(err?.message || "Google sign-in failed");
     } finally {
@@ -52,7 +66,7 @@ const Signup = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 p-4 relative overflow-hidden">
+    <div className="min-h-screen flex items-center justify-center bg-background p-4 relative overflow-hidden">
       {/* Animated background elements */}
       <div className="absolute top-0 left-0 w-96 h-96 bg-pink-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob"></div>
       <div className="absolute top-0 right-0 w-96 h-96 bg-purple-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-2000"></div>
@@ -80,20 +94,20 @@ const Signup = () => {
         <div className="text-center mb-12">
           <Link to="/" className="inline-flex items-center gap-3 mb-8 group">
             <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-cyan-400 to-blue-500 flex items-center justify-center shadow-lg shadow-cyan-500/50 group-hover:shadow-cyan-500/70 transition-all duration-300 group-hover:scale-110">
-              <span className="text-white font-bold text-lg">EA</span>
+              <span className="text-foreground font-bold text-lg">EA</span>
             </div>
             <span className="text-2xl font-bold bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent">ExpenseAI</span>
           </Link>
-          <h1 className="text-4xl font-bold text-white mb-2">Create Account</h1>
-          <p className="text-gray-400 text-base">Join thousands managing their finances smartly</p>
+          <h1 className="text-4xl font-bold text-foreground mb-2">Create Account</h1>
+          <p className="text-muted-foreground text-base">Join thousands managing their finances smartly</p>
         </div>
 
         {/* Floating card with glassmorphism effect */}
-        <div className="relative z-10 rounded-3xl bg-white/10 backdrop-blur-xl border border-white/20 p-8 shadow-2xl hover:border-white/30 transition-all duration-300">
+        <div className="relative z-10 rounded-3xl bg-card/10 backdrop-blur-xl border border-border p-8 shadow-2xl transition-all duration-300">
           <form className="space-y-5" onSubmit={handleSubmit}>
             {/* Full Name */}
             <div className="space-y-2">
-              <Label htmlFor="fullName" className="text-white font-medium text-sm block">Full name</Label>
+              <Label htmlFor="fullName" className="text-foreground font-medium text-sm block">Full name</Label>
               <div className="relative group">
                 <User className="absolute left-4 top-1/2 -translate-y-1/2 text-cyan-400/60 group-focus-within:text-cyan-400 transition-colors w-5 h-5" />
                 <Input
@@ -103,14 +117,14 @@ const Signup = () => {
                   placeholder="John Doe"
                   value={formData.fullName}
                   onChange={handleChange}
-                  className="pl-12 bg-white/5 border-white/20 text-white placeholder:text-gray-500 focus:border-cyan-400/50 focus:bg-white/10 h-12 rounded-xl transition-all duration-200"
+                  className="pl-12 bg-card/10 border-border text-foreground placeholder:text-muted-foreground focus:border-cyan-400/50 focus:bg-card/15 h-12 rounded-xl transition-all duration-200"
                 />
               </div>
             </div>
 
             {/* Email */}
             <div className="space-y-2">
-              <Label htmlFor="email" className="text-white font-medium text-sm block">Email address</Label>
+              <Label htmlFor="email" className="text-foreground font-medium text-sm block">Email address</Label>
               <div className="relative group">
                 <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-cyan-400/60 group-focus-within:text-cyan-400 transition-colors w-5 h-5" />
                 <Input
@@ -128,7 +142,7 @@ const Signup = () => {
 
             {/* Password */}
             <div className="space-y-2">
-              <Label htmlFor="password" className="text-white font-medium text-sm block">Password</Label>
+              <Label htmlFor="password" className="text-foreground font-medium text-sm block">Password</Label>
               <div className="relative group">
                 <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-cyan-400/60 group-focus-within:text-cyan-400 transition-colors w-5 h-5" />
                 <Input
@@ -146,7 +160,7 @@ const Signup = () => {
 
             {/* Date of Birth */}
             <div className="space-y-2">
-              <Label htmlFor="dateOfBirth" className="text-white font-medium text-sm block">Date of birth</Label>
+              <Label htmlFor="dateOfBirth" className="text-foreground font-medium text-sm block">Date of birth</Label>
               <div className="relative group">
                 <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 text-cyan-400/60 group-focus-within:text-cyan-400 transition-colors w-5 h-5 pointer-events-none" />
                 <Input
@@ -162,7 +176,7 @@ const Signup = () => {
 
             {/* Gender */}
             <div className="space-y-2">
-              <Label htmlFor="gender" className="text-white font-medium text-sm block">Gender</Label>
+              <Label htmlFor="gender" className="text-foreground font-medium text-sm block">Gender</Label>
               <div className="relative group">
                 <Users className="absolute left-4 top-1/2 -translate-y-1/2 text-cyan-400/60 group-focus-within:text-cyan-400 transition-colors w-5 h-5 pointer-events-none" />
                 <select
@@ -170,12 +184,12 @@ const Signup = () => {
                   name="gender"
                   value={formData.gender}
                   onChange={handleChange}
-                  className="w-full pl-12 pr-4 py-3 h-12 bg-white/5 border border-white/20 text-white rounded-xl focus:outline-none focus:bg-white/10 focus:border-cyan-400/50 transition-all duration-200 appearance-none cursor-pointer"
+                  className="w-full pl-12 pr-4 py-3 h-12 bg-card/10 border border-border text-foreground rounded-xl focus:outline-none focus:bg-card/15 focus:border-cyan-400/50 transition-all duration-200 appearance-none cursor-pointer"
                 >
-                  <option value="" className="bg-slate-900 text-white">Select Gender</option>
-                  <option value="male" className="bg-slate-900 text-white">Male</option>
-                  <option value="female" className="bg-slate-900 text-white">Female</option>
-                  <option value="other" className="bg-slate-900 text-white">Other</option>
+                  <option value="" className="bg-card text-foreground">Select Gender</option>
+                  <option value="male" className="bg-card text-foreground">Male</option>
+                  <option value="female" className="bg-card text-foreground">Female</option>
+                  <option value="other" className="bg-card text-foreground">Other</option>
                 </select>
               </div>
             </div>
@@ -187,7 +201,7 @@ const Signup = () => {
             )}
 
             <Button
-              className="w-full h-12 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white font-bold rounded-xl shadow-lg shadow-cyan-500/50 hover:shadow-cyan-500/70 disabled:opacity-50 transition-all duration-300 hover:scale-105 active:scale-95"
+              className="w-full h-12 bg-gradient-to-r from-cyan-500 to-blue-500 text-primary-foreground font-bold rounded-xl shadow-lg shadow-cyan-500/50 disabled:opacity-50 transition-all duration-300 active:scale-95"
               type="submit"
               disabled={loading}
             >
@@ -198,10 +212,10 @@ const Signup = () => {
           {/* Divider */}
           <div className="relative my-6">
             <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-white/10"></div>
+              <div className="w-full border-t border-border"></div>
             </div>
             <div className="relative flex justify-center text-sm">
-              <span className="px-2 bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 text-gray-400">OR CONTINUE WITH</span>
+              <span className="px-2 bg-background text-muted-foreground">OR CONTINUE WITH</span>
             </div>
           </div>
 
@@ -210,7 +224,7 @@ const Signup = () => {
             <Button
               type="button"
               onClick={handleGoogle}
-              className="h-11 w-full bg-white text-slate-900 font-semibold rounded-xl shadow-sm hover:shadow-md transition-all duration-200 flex items-center justify-center gap-3"
+              className="h-11 w-full bg-card/5 text-foreground font-semibold rounded-xl shadow-sm hover:shadow-md transition-all duration-200 flex items-center justify-center gap-3"
               disabled={loading}
               aria-label="Continue with Google"
             >
@@ -225,7 +239,7 @@ const Signup = () => {
           </div>
 
           {/* Login Link */}
-          <p className="text-center text-gray-400 text-sm mt-6">
+          <p className="text-center text-muted-foreground text-sm mt-6">
             Already have an account?{" "}
             <Link to="/login" className="text-cyan-400 hover:text-cyan-300 font-bold transition-colors">
               LOG IN
@@ -234,7 +248,7 @@ const Signup = () => {
         </div>
 
         {/* Trust Footer */}
-        <div className="text-center mt-8 text-gray-500 text-xs space-y-2">
+        <div className="text-center mt-8 text-muted-foreground text-xs space-y-2">
           <p className="flex items-center justify-center gap-2">
             <span>🔒</span> Your data is encrypted and secure
           </p>

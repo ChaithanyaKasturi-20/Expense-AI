@@ -52,16 +52,22 @@ export interface AnalysisResult {
 }
 
 // Heuristic stub: replace with backend model calls later.
+function ensureDate(value: Date | string): Date {
+  return value instanceof Date ? value : new Date(value);
+}
+
 export function classifyExpense(expense: Expense, existing: Expense[]): ClassifyResult {
   const nonEssential: Category[] = ["food", "shopping", "entertainment"];
   const impulse = nonEssential.includes(expense.category) && expense.amount > 500;
 
   // Simple habit check: > 4 occurrences in same category this month
-  const month = expense.date.getMonth();
-  const year = expense.date.getFullYear();
-  const freq = existing.filter(
-    (e) => e.category === expense.category && e.date.getMonth() === month && e.date.getFullYear() === year,
-  ).length;
+  const expenseDate = ensureDate(expense.date);
+  const month = expenseDate.getMonth();
+  const year = expenseDate.getFullYear();
+  const freq = existing.filter((e) => {
+    const date = ensureDate(e.date);
+    return e.category === expense.category && date.getMonth() === month && date.getFullYear() === year;
+  }).length;
   const habit = freq >= 4;
 
   let alert: HabitAlert | undefined;
@@ -148,7 +154,10 @@ export function reconcileSavingsLedger(params: {
   const { year, month, daysInMonth } = monthBounds(now);
   const daysSoFar = Math.max(1, now.getDate());
 
-  const monthExpenses = params.expenses.filter((e) => e.date.getFullYear() === year && e.date.getMonth() === month);
+  const monthExpenses = params.expenses.filter((e) => {
+    const date = ensureDate(e.date);
+    return date.getFullYear() === year && date.getMonth() === month;
+  });
 
   const dailyTotals = new Map<string, number>();
   const monthTotals: Record<Category, number> = {
@@ -165,7 +174,7 @@ export function reconcileSavingsLedger(params: {
   const distinctDaysByCategory = new Map<Category, Set<string>>();
 
   for (const e of monthExpenses) {
-    const dk = toDateKey(new Date(e.date));
+    const dk = toDateKey(ensureDate(e.date));
     const key = `${dk}|${e.category}`;
     dailyTotals.set(key, (dailyTotals.get(key) ?? 0) + e.amount);
     monthTotals[e.category] += e.amount;
@@ -290,7 +299,10 @@ export function computeCategoryCap(params: {
   const daysSoFar = Math.max(1, now.getDate());
 
   const monthTotal = params.expenses
-    .filter((e) => e.category === params.category && e.date.getFullYear() === year && e.date.getMonth() === month)
+    .filter((e) => {
+      const date = ensureDate(e.date);
+      return e.category === params.category && date.getFullYear() === year && date.getMonth() === month;
+    })
     .reduce((s, e) => s + e.amount, 0);
 
   const categoryPotential = params.alerts
@@ -311,7 +323,10 @@ export function analyzeExpenses(expenses: Expense[]): AnalysisResult {
 
   // Compute category/day statistics
   const now = new Date();
-  const thisMonth = expenses.filter((e) => e.date.getFullYear() === now.getFullYear() && e.date.getMonth() === now.getMonth());
+  const thisMonth = expenses.filter((e) => {
+    const date = ensureDate(e.date);
+    return date.getFullYear() === now.getFullYear() && date.getMonth() === now.getMonth();
+  });
   const impulseSpending = thisMonth.filter((e) => ["food", "shopping", "entertainment"].includes(e.category) && e.amount > 500).reduce((s, e) => s + e.amount, 0);
 
   const byCategory = new Map<Category, Expense[]>();
@@ -322,12 +337,15 @@ export function analyzeExpenses(expenses: Expense[]): AnalysisResult {
   let potentialSavings = 0;
 
   for (const [cat, list] of byCategory) {
-    const days = new Set(list.map((e) => `${e.date.getFullYear()}-${e.date.getMonth()}-${e.date.getDate()}`));
+    const days = new Set(list.map((e) => {
+      const date = ensureDate(e.date);
+      return `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
+    }));
     const distinctDays = days.size;
     const total = list.reduce((s, e) => s + e.amount, 0);
     const avg = total / Math.max(1, distinctDays);
     const weekendSpike = list.filter((e) => {
-      const d = e.date.getDay();
+      const d = ensureDate(e.date).getDay();
       return d === 0 || d === 6;
     }).reduce((s, e) => s + e.amount, 0) > total * 0.5;
     const trendUp = list.length >= 3 && list[list.length - 1].amount > list[0].amount * 1.25;
@@ -373,6 +391,16 @@ export function analyzeExpenses(expenses: Expense[]): AnalysisResult {
 }
 
 // Backend stubs: these hit /api endpoints (to be implemented server-side with Gemini). Frontend never includes API key.
+export interface AIChatResponse {
+  reply: string;
+  analysis?: {
+    totalSpent: number;
+    transactionCount: number;
+    topCategories: { category: string; amount: number }[];
+    note: string;
+  };
+}
+
 export async function requestGeminiAnalysis(expenses: Expense[]): Promise<AnalysisResult> {
   try {
     const res = await fetch('/api/ai/analyze', {
@@ -387,7 +415,7 @@ export async function requestGeminiAnalysis(expenses: Expense[]): Promise<Analys
   }
 }
 
-export async function requestGeminiChat(expenses: Expense[], userMessage: string): Promise<{ reply: string }> {
+export async function requestGeminiChat(expenses: Expense[], userMessage: string): Promise<AIChatResponse> {
   try {
     const res = await fetch('/api/ai/chat', {
       method: 'POST',
@@ -397,9 +425,27 @@ export async function requestGeminiChat(expenses: Expense[], userMessage: string
     if (!res.ok) throw new Error('Bad status');
     return await res.json();
   } catch {
-    // Local supportive fallback
     const analysis = analyzeExpenses(expenses);
     const hint = analysis.suggestions[0] ?? 'Track one category closely this week to build awareness.';
-    return { reply: `Here’s a thought: ${hint}` };
+    const topCategories = Object.entries(
+      expenses.reduce((acc, expense) => {
+        const category = expense.category || 'other';
+        acc[category] = (acc[category] || 0) + expense.amount;
+        return acc;
+      }, {} as Record<string, number>)
+    )
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 3)
+      .map(([category, amount]) => ({ category, amount }));
+
+    return {
+      reply: `Here’s a thought: ${hint}`,
+      analysis: {
+        totalSpent: expenses.reduce((sum, expense) => sum + expense.amount, 0),
+        transactionCount: expenses.length,
+        topCategories,
+        note: 'This is a local fallback analysis. The AI assistant is not currently available.',
+      },
+    };
   }
 }

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, useLocation, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,7 +7,7 @@ import { useAuth } from "@/context/AuthContext";
 import { Mail, Lock, Eye, EyeOff } from "lucide-react";
 
 const Login = () => {
-  const { login, loginWithGoogle } = useAuth();
+  const { signIn, signInWithGoogle, user } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -17,12 +17,25 @@ const Login = () => {
   const location = useLocation() as any;
   const from = location.state?.from?.pathname || "/dashboard";
 
+  useEffect(() => {
+    if (user) {
+      navigate(from, { replace: true });
+    }
+  }, [user, navigate, from]);
+
+  useEffect(() => {
+    if (location.state?.message) {
+      setError(location.state.message);
+    }
+  }, [location.state]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setLoading(true);
+
     try {
-      await login(email, password);
+      await signIn(email, password);
       navigate(from, { replace: true });
     } catch (err: any) {
       setError(err?.message || "Failed to sign in");
@@ -34,9 +47,10 @@ const Login = () => {
   const handleGoogle = async () => {
     setError(null);
     setLoading(true);
+
     try {
-      await loginWithGoogle();
-      navigate(from, { replace: true });
+      await signInWithGoogle();
+      // User is redirected through Supabase OAuth flow.
     } catch (err: any) {
       setError(err?.message || "Google sign-in failed");
     } finally {
@@ -45,7 +59,7 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 p-4 relative overflow-hidden">
+    <div className="min-h-screen flex items-center justify-center bg-background p-4 relative overflow-hidden">
       {/* Animated background elements */}
       <div className="absolute top-0 left-0 w-96 h-96 bg-purple-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob"></div>
       <div className="absolute top-0 right-0 w-96 h-96 bg-cyan-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-2000"></div>
@@ -73,19 +87,19 @@ const Login = () => {
         <div className="text-center mb-12">
           <Link to="/" className="inline-flex items-center gap-3 mb-8 group">
             <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-cyan-400 to-blue-500 flex items-center justify-center shadow-lg shadow-cyan-500/50 group-hover:shadow-cyan-500/70 transition-all duration-300 group-hover:scale-110">
-              <span className="text-white font-bold text-lg">EA</span>
+              <span className="text-foreground font-bold text-lg">EA</span>
             </div>
             <span className="text-2xl font-bold bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent">ExpenseAI</span>
           </Link>
-          <h1 className="text-4xl font-bold text-white mb-2">Welcome back</h1>
-          <p className="text-gray-400 text-base">Log in to your account to continue</p>
+          <h1 className="text-4xl font-bold text-foreground mb-2">Welcome back</h1>
+          <p className="text-muted-foreground text-base">Log in to your account to continue</p>
         </div>
 
         {/* Floating card with glassmorphism effect */}
-        <div className="relative z-10 rounded-3xl bg-white/10 backdrop-blur-xl border border-white/20 p-8 shadow-2xl hover:border-white/30 transition-all duration-300">
+        <div className="relative z-10 rounded-3xl bg-card/10 backdrop-blur-xl border border-border p-8 shadow-2xl transition-all duration-300">
           <form className="space-y-5" onSubmit={handleSubmit}>
             <div className="space-y-2">
-              <Label htmlFor="email" className="text-white font-medium text-sm block">Email address</Label>
+              <Label htmlFor="email" className="text-foreground font-medium text-sm block">Email address</Label>
               <div className="relative group">
                 <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-cyan-400/60 group-focus-within:text-cyan-400 transition-colors w-5 h-5" />
                 <Input
@@ -95,14 +109,14 @@ const Login = () => {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
-                  className="pl-12 bg-white/5 border-white/20 text-white placeholder:text-gray-500 focus:border-cyan-400/50 focus:bg-white/10 h-12 rounded-xl transition-all duration-200"
+                  className="pl-12 bg-card/10 border-border text-foreground placeholder:text-muted-foreground focus:border-cyan-400/50 focus:bg-card/15 h-12 rounded-xl transition-all duration-200"
                 />
               </div>
             </div>
             
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <Label htmlFor="password" className="text-white font-medium text-sm">Password</Label>
+                <Label htmlFor="password" className="text-foreground font-medium text-sm">Password</Label>
                 <Link to="/forgot-password" className="text-cyan-400 hover:text-cyan-300 text-xs font-semibold transition-colors">
                   FORGOT PASSWORD?
                 </Link>
@@ -116,12 +130,12 @@ const Login = () => {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
-                  className="pl-12 pr-12 bg-white/5 border-white/20 text-white placeholder:text-gray-500 focus:border-cyan-400/50 focus:bg-white/10 h-12 rounded-xl transition-all duration-200"
+                  className="pl-12 pr-12 bg-card/10 border-border text-foreground placeholder:text-muted-foreground focus:border-cyan-400/50 focus:bg-card/15 h-12 rounded-xl transition-all duration-200"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-cyan-400 transition-colors"
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-cyan-400 transition-colors"
                 >
                   {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                 </button>
@@ -135,7 +149,7 @@ const Login = () => {
             )}
             
             <Button
-              className="w-full h-12 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white font-bold rounded-xl shadow-lg shadow-cyan-500/50 hover:shadow-cyan-500/70 disabled:opacity-50 transition-all duration-300 hover:scale-105 active:scale-95 group"
+              className="w-full h-12 bg-gradient-to-r from-cyan-500 to-blue-500 text-primary-foreground font-bold rounded-xl shadow-lg shadow-cyan-500/50 disabled:opacity-50 transition-all duration-300 active:scale-95 group"
               type="submit"
               disabled={loading}
             >
@@ -146,10 +160,10 @@ const Login = () => {
           {/* Divider */}
           <div className="relative my-6">
             <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-white/10"></div>
+              <div className="w-full border-t border-border"></div>
             </div>
             <div className="relative flex justify-center text-sm">
-              <span className="px-2 bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 text-gray-400">OR CONTINUE WITH</span>
+              <span className="px-2 bg-background text-muted-foreground">OR CONTINUE WITH</span>
             </div>
           </div>
 
@@ -158,7 +172,7 @@ const Login = () => {
             <Button
               type="button"
               onClick={handleGoogle}
-              className="h-11 w-full bg-white text-slate-900 font-semibold rounded-xl shadow-sm hover:shadow-md transition-all duration-200 flex items-center justify-center gap-3"
+              className="h-11 w-full bg-card/5 text-foreground font-semibold rounded-xl shadow-sm hover:shadow-md transition-all duration-200 flex items-center justify-center gap-3"
               disabled={loading}
               aria-label="Continue with Google"
             >
@@ -173,7 +187,7 @@ const Login = () => {
           </div>
 
           {/* Signup Link */}
-          <p className="text-center text-gray-400 text-sm mt-6">
+          <p className="text-center text-muted-foreground text-sm mt-6">
             Don't have an account?{" "}
             <Link to="/signup" className="text-cyan-400 hover:text-cyan-300 font-bold transition-colors">
               CREATE ONE
@@ -182,7 +196,7 @@ const Login = () => {
         </div>
 
         {/* Trust Footer */}
-        <div className="text-center mt-8 text-gray-500 text-xs space-y-2">
+        <div className="text-center mt-8 text-muted-foreground text-xs space-y-2">
           <p className="flex items-center justify-center gap-2">
             <span>🔒</span> Your data is encrypted and secure
           </p>

@@ -8,51 +8,41 @@ interface WeeklyTrendChartProps {
 export function WeeklyTrendChart({ data }: WeeklyTrendChartProps) {
   return (
     <motion.div
-      initial={{ opacity: 0, scale: 0.95 }}
+      initial={{ opacity: 0, scale: 0.96 }}
       animate={{ opacity: 1, scale: 1 }}
-      className="rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 p-6 shadow-lg hover:bg-white/15 transition-all"
+      whileHover={{ y: -4, transition: { duration: 0.2 } }}
+      className="rounded-[2rem] border border-white/10 bg-slate-950/85 p-6 shadow-2xl shadow-black/20 backdrop-blur-xl transition-all"
     >
-      <h3 className="mb-4 text-lg font-semibold text-white font-display">Weekly Spending</h3>
-      
-      <div className="h-48">
+      <div className="mb-4 flex items-center justify-between gap-4">
+        <div>
+          <h3 className="text-lg font-semibold text-white font-display">Weekly trend</h3>
+          <p className="text-sm text-gray-400">Spot the momentum in your spending.</p>
+        </div>
+        <div className="rounded-3xl bg-white/5 px-4 py-2 text-sm text-gray-300">Last 7 days</div>
+      </div>
+
+      <div className="h-56">
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart data={data}>
             <defs>
-              <linearGradient id="colorAmount" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#06b6d4" stopOpacity={0.3}/>
-                <stop offset="95%" stopColor="#06b6d4" stopOpacity={0}/>
+              <linearGradient id="trendGradient" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor="#38bdf8" stopOpacity={0.35} />
+                <stop offset="95%" stopColor="#38bdf8" stopOpacity={0} />
               </linearGradient>
             </defs>
-            <XAxis 
-              dataKey="day" 
-              axisLine={false}
-              tickLine={false}
-              tick={{ fill: '#9ca3af', fontSize: 12 }}
-            />
-            <YAxis 
-              axisLine={false}
-              tickLine={false}
-              tick={{ fill: '#9ca3af', fontSize: 12 }}
-              tickFormatter={(value) => `₹${value}`}
-            />
-            <Tooltip 
+            <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 12 }} />
+            <YAxis axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 12 }} tickFormatter={(value) => `₹${value}`} />
+            <Tooltip
               formatter={(value: number) => [`₹${value}`, 'Spent']}
               contentStyle={{
-                backgroundColor: 'rgba(15, 23, 42, 0.9)',
-                border: '1px solid rgba(255, 255, 255, 0.2)',
-                borderRadius: '12px',
-                padding: '8px 12px',
+                backgroundColor: 'rgba(15, 23, 42, 0.95)',
+                border: '1px solid rgba(255,255,255,0.12)',
+                borderRadius: 16,
+                padding: 12,
                 color: 'white',
               }}
             />
-            <Area
-              type="monotone"
-              dataKey="amount"
-              stroke="#06b6d4"
-              strokeWidth={2}
-              fillOpacity={1}
-              fill="url(#colorAmount)"
-            />
+            <Area type="monotone" dataKey="amount" stroke="#38bdf8" strokeWidth={3} fill="url(#trendGradient)" />
           </AreaChart>
         </ResponsiveContainer>
       </div>

@@ -2,10 +2,13 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { ThemeProvider } from "next-themes";
 import React from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Landing from "./pages/Landing";
 import Index from "./pages/Index";
+import MonthlySummary from "./pages/MonthlySummary";
+import CategoryDetail from "./pages/CategoryDetail";
 import NotFound from "./pages/NotFound";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
@@ -17,13 +20,14 @@ import { ProtectedRoute } from "./routes/ProtectedRoute";
 const queryClient = new QueryClient();
 
 const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <AuthProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <Routes>
+  <ThemeProvider attribute="class" defaultTheme="dark" enableSystem storageKey="expenseai-theme" disableTransitionOnChange>
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <AuthProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <Routes>
             <Route path="/" element={<Landing />} />
             <Route
               path="/dashboard"
@@ -32,14 +36,35 @@ const App = () => (
                   <Index />
                 </ProtectedRoute>
               }
-            />            <Route path="/profile" element={
-              <ProtectedRoute>
-                {/* Lazy import to keep parity with other pages */}
-                <React.Suspense fallback={<div className="p-6">Loading...</div>}>
-                  <Profile />
-                </React.Suspense>
-              </ProtectedRoute>
-            } />            <Route path="/login" element={<Login />} />
+            />
+            <Route
+              path="/dashboard/monthly-summary"
+              element={
+                <ProtectedRoute>
+                  <MonthlySummary />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/dashboard/category/:categorySlug"
+              element={
+                <ProtectedRoute>
+                  <CategoryDetail />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/profile"
+              element={
+                <ProtectedRoute>
+                  {/* Lazy import to keep parity with other pages */}
+                  <React.Suspense fallback={<div className="p-6">Loading...</div>}>
+                    <Profile />
+                  </React.Suspense>
+                </ProtectedRoute>
+              }
+            />
+            <Route path="/login" element={<Login />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/signup" element={<Signup />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
@@ -49,6 +74,7 @@ const App = () => (
       </AuthProvider>
     </TooltipProvider>
   </QueryClientProvider>
+</ThemeProvider>
 );
 
 export default App;

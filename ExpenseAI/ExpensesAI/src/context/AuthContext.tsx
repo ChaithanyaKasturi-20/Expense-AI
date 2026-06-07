@@ -1,16 +1,6 @@
 import { createContext, useContext, useEffect, useState } from "react";
-import {
-  createUserWithEmailAndPassword,
-  signInWithEmailAndPassword,
-  signOut,
-  signInWithPopup,
-  onAuthStateChanged,
-  updateEmail as fbUpdateEmail,
-  updatePassword as fbUpdatePassword,
-  sendPasswordResetEmail as fbSendPasswordResetEmail,
-  User as FirebaseUser,
-} from "firebase/auth";
-import { auth, firebaseReady, googleProvider } from "@/lib/firebase";
+import { User } from "@supabase/supabase-js";
+import { supabase } from "@/lib/supabase";
 
 interface LocalUser {
   uid: string;
@@ -20,9 +10,10 @@ interface LocalUser {
 interface AuthContextValue {
   user: LocalUser | null;
   loading: boolean;
-  login: (email: string, password: string) => Promise<void>;
-  signup: (email: string, password: string) => Promise<void>;
-  loginWithGoogle: () => Promise<void>;
+  signIn: (email: string, password: string) => Promise<void>;
+  signUp: (email: string, password: string) => Promise<boolean>;
+  signOut: () => Promise<void>;
+  signInWithGoogle: () => Promise<void>;
   logout: () => Promise<void>;
   updateEmail: (newEmail: string) => Promise<void>;
   updatePassword: (newPassword: string) => Promise<void>;
@@ -31,132 +22,113 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
-const firebaseUserToLocalUser = (fbUser: FirebaseUser): LocalUser => ({
-  uid: fbUser.uid,
-  email: fbUser.email || "",
-});
+const mapUser = (user: User | null): LocalUser | null =>
+  user
+    ? {
+        uid: user.id,
+        email: user.email ?? "",
+      }
+    : null;
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<LocalUser | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Set up Firebase auth state listener
   useEffect(() => {
-    if (!firebaseReady) {
-      console.error("Firebase is not initialized. Please check your .env.local configuration.");
-      setLoading(false);
-      return;
-    }
-
-    const unsubscribe = onAuthStateChanged(auth, (fbUser) => {
-      if (fbUser) {
-        setUser(firebaseUserToLocalUser(fbUser));
-      } else {
-        setUser(null);
+    // Initialize the current Supabase session on app start.
+    const init = async () => {
+      const { data, error } = await supabase.auth.getSession();
+      if (error) {
+        console.error("Failed to get Supabase session:", error.message);
       }
+      console.log("[AuthProvider] init session:", data?.session ?? null);
+      try {
+        // expose for quick runtime inspection
+        (window as any).__AUTH_DEBUG = { when: Date.now(), event: 'init', session: data?.session ?? null };
+      } catch {}
+      setUser(mapUser(data.session?.user ?? null));
+      setLoading(false);
+    };
+
+    init();
+
+    // Keep React state in sync with Supabase authentication events.
+    const { data } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log("[AuthProvider] onAuthStateChange:", event, session ?? null);
+      try {
+        (window as any).__AUTH_DEBUG = { when: Date.now(), event, session: session ?? null };
+      } catch {}
+      setUser(mapUser(session?.user ?? null));
       setLoading(false);
     });
 
-    return () => unsubscribe();
+    return () => (data as any)?.subscription?.unsubscribe();
   }, []);
 
-  const signup = async (email: string, password: string) => {
-    if (!firebaseReady) {
-      throw new Error("Firebase is not initialized. Please check your .env.local configuration.");
-    }
-    try {
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      setUser(firebaseUserToLocalUser(userCredential.user));
-    } catch (error: any) {
-      throw new Error(error.message || "Failed to create account");
-    }
+  const signIn = async (email: string, password: string) => {
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) throw new Error(error.message);
+    if (!data.session || !data.user) throw new Error("Unable to sign in. Please check your credentials.");
+    console.log('[AuthProvider] signIn success, user:', data.user, 'session:', data.session);
+    try { (window as any).__AUTH_DEBUG = { when: Date.now(), event: 'signIn', user: data.user, session: data.session }; } catch {}
+    setUser(mapUser(data.user));
   };
 
-  const login = async (email: string, password: string) => {
-    if (!firebaseReady) {
-      throw new Error("Firebase is not initialized. Please check your .env.local configuration.");
-    }
-    try {
-      const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      setUser(firebaseUserToLocalUser(userCredential.user));
-    } catch (error: any) {
-      throw new Error(error.message || "Invalid email or password");
-    }
+  const signUp = async (email: string, password: string) => {
+    const { data, error } = await supabase.auth.signUp({ email, password });
+    if (error) throw new Error(error.message);
+
+    // If the user is immediately signed in, persist the session.
+    setUser(mapUser(data.session?.user ?? null));
+    return Boolean(data.session);
   };
 
-  const loginWithGoogle = async () => {
-    if (!firebaseReady) {
-      throw new Error("Firebase is not initialized. Please check your .env.local configuration.");
-    }
-    try {
-      const result = await signInWithPopup(auth, googleProvider);
-      setUser(firebaseUserToLocalUser(result.user));
-    } catch (error: any) {
-      throw new Error(error.message || "Google sign-in failed");
-    }
+  const signInWithGoogle = async () => {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: `${window.location.origin}/dashboard`,
+      },
+    });
+    if (error) throw new Error(error.message);
   };
 
-  const logout = async () => {
-    if (!firebaseReady) {
-      throw new Error("Firebase is not initialized");
-    }
-    try {
-      await signOut(auth);
-      setUser(null);
-    } catch (error: any) {
-      throw new Error(error.message || "Failed to sign out");
-    }
+  const signOut = async () => {
+    const { error } = await supabase.auth.signOut();
+    if (error) throw new Error(error.message);
+    console.log('[AuthProvider] signOut called');
+    try { (window as any).__AUTH_DEBUG = { when: Date.now(), event: 'signOut' }; } catch {}
+    setUser(null);
   };
 
   const updateEmail = async (newEmail: string) => {
-    if (!firebaseReady) throw new Error("Firebase is not initialized");
-    const current = auth.currentUser;
-    if (!current) throw new Error("No authenticated user");
-    try {
-      await fbUpdateEmail(current, newEmail);
-      setUser((u) => (u ? { ...u, email: newEmail } : u));
-    } catch (error: any) {
-      throw new Error(error.message || "Failed to update email");
-    }
+    if (!user) throw new Error("No authenticated user.");
+    const { data, error } = await supabase.auth.updateUser({ email: newEmail });
+    if (error) throw new Error(error.message);
+    setUser(mapUser(data.user));
   };
 
   const updatePassword = async (newPassword: string) => {
-    if (!firebaseReady) throw new Error("Firebase is not initialized");
-    const current = auth.currentUser;
-    if (!current) throw new Error("No authenticated user");
-    try {
-      await fbUpdatePassword(current, newPassword);
-    } catch (error: any) {
-      throw new Error(error.message || "Failed to update password");
-    }
+    if (!user) throw new Error("No authenticated user.");
+    const { error } = await supabase.auth.updateUser({ password: newPassword });
+    if (error) throw new Error(error.message);
   };
 
   const resetPassword = async (email: string) => {
-    if (!firebaseReady) throw new Error("Firebase is not initialized");
-    try {
-      // Provide a continue URL so the email contains a useful redirect back to the app after reset
-      const actionCodeSettings = {
-        url: typeof window !== "undefined" ? `${window.location.origin}/login` : undefined,
-      } as const;
-
-      await fbSendPasswordResetEmail(auth, email, actionCodeSettings as any);
-      // Log success for local debugging
-      console.info("Password reset email requested for:", email);
-    } catch (error: any) {
-      console.error("Password reset failed", error?.code, error?.message);
-      // Surface a helpful message including Firebase error code when available
-      const code = error?.code ? `${error.code} - ` : "";
-      throw new Error(code + (error?.message || "Failed to send password reset email"));
-    }
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/login`,
+    });
+    if (error) throw new Error(error.message);
   };
 
   const value: AuthContextValue = {
     user,
     loading,
-    login,
-    signup,
-    loginWithGoogle,
-    logout,
+    signIn,
+    signUp,
+    signOut,
+    signInWithGoogle,
+    logout: signOut,
     updateEmail,
     updatePassword,
     resetPassword,
